@@ -2,7 +2,7 @@
 
 ## Запуск кода
 
-- Для начала подключимся к кластеру hse и в терминале введем команду ниже - ею мы зарезервируем 8 ядер и впоследствии не будем ждать, когда же освободятся нужные для запуска сpu.
+- Для начала подключимся к кластеру hse и в терминале введем команду ниже - ею мы зарезервируем 8 ядер и впоследствии не будем ждать, когда же освободятся нужные для запуска сpu. Proj_1339 был обнаружен с помощью команды `mp`, отражающей, какие квоты (проекты) на суперкомпьютер есть.
 
 ```bash
 srun -A proj_1339 --pty --cpus-per-task=8 bash
@@ -37,6 +37,77 @@ https://ru.wikipedia.org/wiki/Задача_Бюффона_о_бросании_и
 при любом числе потоков. (0.5 балла за каждую задачу).
 ## Решение
 
+_Исходная функция_
+
+```cpp
+double mc_pi(ptrdiff_t niter, size_t seed)
+{
+    double num_crosses = 0;
+    std::mt19937_64 rng(seed);
+    std::normal_distribution<> rand_nrm(0.0, 1.0);
+    std::uniform_real_distribution<double> rand_un(-1.0, 1.0);
+#pragma omp parallel
+    {
+        #pragma omp for reduction(+: num_crosses)
+        for (ptrdiff_t i = 0; i < niter; ++i)
+        {
+            // generate a unit vector with a uniform rotation
+            double x = rand_nrm(rng), y = rand_nrm(rng);
+            double l = std::hypot(x, y);
+            
+            y *= 0.5 / l;
+
+            // check if a horizontal line crosses a needle
+            double y_line = rand_un(rng);
+            num_crosses += std::abs(y_line) < std::abs(y);
+        }
+    }
+    // p = 2L / (r * pi) = 1 / pi if 2L = r
+    // r is width of uniform distribution (2 if it is from -1 to 1)
+    // L is length of the needle (1 in our case)
+    double pi_est = niter / num_crosses;
+    return pi_est;
+}
+```
+_Исправленная функция_
+
+```cpp
+double mc_pi(ptrdiff_t niter, size_t seed)
+{
+    double num_crosses = 0, x, l, y, y_line;
+    #pragma omp parallel
+    {
+        std::mt19937_64 rng(seed + omp_get_thread_num());
+        std::normal_distribution<> rand_nrm(0.0, 1.0);
+        std::uniform_real_distribution<double> rand_un(-1.0, 1.0);
+        #pragma omp for private(x, l, y, y_line) reduction(+: num_crosses) nowait
+        for (ptrdiff_t i = 0; i < niter; ++i)
+        {
+            // generate a unit vector with a uniform rotation
+            x = rand_nrm(rng);
+            y = rand_nrm(rng);
+            l = std::hypot(x, y);
+            
+            y *= 0.5 / l;
+
+            // check if a horizontal line crosses a needle
+            y_line = rand_un(rng);
+            num_crosses += std::abs(y_line) < std::abs(y);
+        }
+    }
+    // p = 2L / (r * pi) = 1 / pi if 2L = r
+    // r is width of uniform distribution (2 if it is from -1 to 1)
+    // L is length of the needle (1 in our case)
+    double pi_est = niter / num_crosses;
+    return pi_est;
+}
+```
+
+_Что произошло_
+
+1) Генераторы были внесены в тело директивы `#pragma omp parallel` и поправлен seed для ликвидации одинаковых генераторов в разных потоках. Таким образом, ошибки вычисления были убраны и с увеличением входных данных π аппроксимировалось лучше.
+
+2) Директива `#pragma omp for reduction(+: num_crosses)` была заменена на `#pragma omp for private(x, l, y, y_line) reduction(+: num_crosses) nowait`. Главное изменение здесь касается добавление `nowait` - с ним многопоточная версия стала работать быстрее.
 ___
 ## 2.3б. 
 ## Условие
@@ -113,4 +184,4 @@ _Что произошло_
 
 1) Директива `#pragma omp parallel` была разделена на два отдельных блока, так по логике функции сначала нам нужно приравнять
 
-2) Директива `#pragma omp for` была дополнена до `#pragma omp for private(omega) nowait`, где `omega` была объявлена как приватная переменная (то есть для каждого процесса будет создаваться копия данной переменной и сипользоваться именно она), `nowait` для того, чтобы не ждать когда все параллельные итерации завершатся
+2) Директива `#pragma omp for` была дополнена до `#pragma omp for private(omega) nowait`, где `omega` была объявлена как приватная переменная (то есть для каждого процесса будет создаваться копия данной переменной и использоваться именно она), `nowait` для того, чтобы не ждать когда все параллельные итерации завершатся.
