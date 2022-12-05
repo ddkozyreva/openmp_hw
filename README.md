@@ -63,12 +63,11 @@ _Использовала для бонусной задачи_
 #SBATCH --time=2
 
 g++ -O3 -fopenmp laplace2d.cpp -o filename
-echo "3000 2000" | srun ./filename
-for n_threads in 2 4 8 16 32; 
+for n_threads in 1 2 4 8 12 16 20 24 28 32; 
 do
     echo "CPUs: $n_threads"
     export OMP_NUM_THREADS=$n_threads
-    echo "3000 2000" | srun ./filename
+    echo "200 200" | srun ./filename
 done
 ```
 Для запуска sh-скрипта использовалось:
@@ -287,3 +286,13 @@ void laplace2d(matrix<double> u, double hx, double hy)
     }
 }
 ```
+
+_Расчет флопсов_
+```bash
+GFLOPS = (n - 2) * (m - 2) * 4
+```
+так как итерации не затрагивают первые и последние строки и столбцы матрицы и внутри 4 операции.
+
+![flops](/materials/flops.png)
+
+_Полученные результаты на ядрах_
