@@ -1,0 +1,30 @@
+CPUs: 1
+Timing: 6.154667611997866 sec
+Laplace equation satisfied: 1
+CPUs: 2
+Timing: 3.377719167998293 sec
+Laplace equation satisfied: 1
+CPUs: 4
+Timing: 1.904971416995977 sec
+Laplace equation satisfied: 1
+CPUs: 8
+Timing: 1.101049901997612 sec
+Laplace equation satisfied: 1
+CPUs: 12
+Timing: 0.9236069170001429 sec
+Laplace equation satisfied: 1
+CPUs: 16
+Timing: 0.7699684940016596 sec
+Laplace equation satisfied: 1
+CPUs: 20
+Timing: 0.7949839380016783 sec
+Laplace equation satisfied: 1
+CPUs: 24
+Timing: 0.7922071920038434 sec
+Laplace equation satisfied: 1
+CPUs: 28
+Timing: 0.8205791829968803 sec
+Laplace equation satisfied: 1
+CPUs: 32
+Timing: 0.8915504569959012 sec
+Laplace equation satisfied: 1
