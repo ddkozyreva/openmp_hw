@@ -90,15 +90,12 @@ void laplace2d(matrix<double> u, double hx, double hy)
 
     while(!test_laplace(u, 1e-6)) {
         #pragma omp parallel for private(j)
-        for (ptrdiff_t i = 0; i < u.nrows() - 1; i++) {
-            for (j = 0; j < u.ncols() - 1; j++) {
+        for (ptrdiff_t i = 1; i < u.nrows() - 1; i++) {
+            for (j = 1; j < u.ncols() - 1; j++) {
                 u_next(i, j) = 0.25 * (u(i-1, j) + u(i+1,j) + u(i,j-1) + u(i, j+1));
             }
         }
-        #pragma omp critical
-        {
-            u = u_next;
-        }
+        u = u_next;
     }
 }
 
@@ -109,7 +106,6 @@ int main(int argc, char* argv[])
     matrix<double> u(n, m);
     random_filling(u, 10.0, 9876);
     random_bounds(u, 100, 5.0, 9876);
-
     double t0 = omp_get_wtime();
 
     laplace2d(u, 1.0 / (n-1), 1.0 / (n-1));
